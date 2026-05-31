@@ -1,0 +1,1 @@
+Capture the main dashboard at desktop width with the sidebar metrics, data health panel, Spain map, marker legend, and selected location drawer visible.

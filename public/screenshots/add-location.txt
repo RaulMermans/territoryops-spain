@@ -1,0 +1,1 @@
+Capture the Add Location form opened in the left sidebar, showing required fields, Google Maps URL input, coordinates, status, priority, and local save messaging.

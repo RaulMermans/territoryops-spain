@@ -1,0 +1,1 @@
+Capture the Data health panel with one drilldown opened, showing matching records and the drawer after selecting a drilldown result.

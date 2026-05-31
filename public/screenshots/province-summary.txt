@@ -1,0 +1,1 @@
+Capture the Province summary section after clicking a province, showing the active province filter and filtered map/list results.
