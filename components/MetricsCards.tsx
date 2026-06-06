@@ -1,5 +1,5 @@
-import { CircleDollarSign, ClipboardCheck, Handshake, Telescope } from "lucide-react";
-import { countByStatus, formatCurrency, pipelineValue } from "@/lib/locations";
+import { AlertTriangle, CircleDollarSign, Handshake, Telescope, TrendingUp } from "lucide-react";
+import { countByStatus, formatCurrency, needsAttentionCount, pipelineValue } from "@/lib/locations";
 import type { RealEstateLocation } from "@/types/location";
 
 interface MetricsCardsProps {
@@ -7,16 +7,18 @@ interface MetricsCardsProps {
 }
 
 export function MetricsCards({ locations }: MetricsCardsProps) {
+  const attention = needsAttentionCount(locations);
+
   const metrics = [
     {
-      label: "Potential",
-      value: countByStatus(locations, "potential").toString(),
+      label: "Interested",
+      value: countByStatus(locations, "interested").toString(),
       icon: Telescope
     },
     {
-      label: "In review",
-      value: countByStatus(locations, "in_review").toString(),
-      icon: ClipboardCheck
+      label: "Evaluating",
+      value: countByStatus(locations, "evaluating").toString(),
+      icon: TrendingUp
     },
     {
       label: "Negotiating",
@@ -24,8 +26,8 @@ export function MetricsCards({ locations }: MetricsCardsProps) {
       icon: Handshake
     },
     {
-      label: "Owned",
-      value: countByStatus(locations, "owned").toString(),
+      label: "Controlled",
+      value: countByStatus(locations, "controlled").toString(),
       icon: CircleDollarSign
     }
   ];
@@ -60,6 +62,20 @@ export function MetricsCards({ locations }: MetricsCardsProps) {
           {formatCurrency(pipelineValue(locations))}
         </p>
       </div>
+      {attention > 0 ? (
+        <div className="rounded-md border border-amber-300/25 bg-amber-300/[0.07] p-3">
+          <div className="flex items-center gap-2">
+            <AlertTriangle size={14} className="text-amber-300" aria-hidden="true" />
+            <p className="text-xs uppercase text-amber-300/80">Needs attention</p>
+          </div>
+          <p className="mt-2 font-mono text-xl font-semibold text-amber-100">
+            {attention}
+          </p>
+          <p className="mt-1 text-xs text-amber-100/60">
+            overdue actions, missing next steps, or negotiating without contact
+          </p>
+        </div>
+      ) : null}
     </section>
   );
 }

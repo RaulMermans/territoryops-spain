@@ -1,9 +1,10 @@
 export type LocationStatus =
-  | "potential"
-  | "in_review"
+  | "watchlist"
+  | "interested"
+  | "evaluating"
   | "negotiating"
-  | "owned"
-  | "rejected"
+  | "controlled"
+  | "passed"
   | "archived";
 
 export type AssetType =
@@ -34,6 +35,21 @@ export interface RealEstateLocation {
   source?: string;
   owner?: string;
   notes?: string;
+  interestLevel?: "low" | "medium" | "high";
+  controlType?: "owned" | "leased" | "option" | "negotiation" | "watchlist" | "none";
+  askingPrice?: number;
+  targetPrice?: number;
+  monthlyRent?: number;
+  expectedCapex?: number;
+  probability?: number;
+  nextAction?: string;
+  nextActionDate?: string;
+  contactName?: string;
+  contactRole?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  lastContactedAt?: string;
+  decisionReason?: string;
   createdAt: string;
   updatedAt: string;
 }

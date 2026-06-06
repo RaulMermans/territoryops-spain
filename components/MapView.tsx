@@ -103,7 +103,7 @@ export function MapView({ locations, selectedId, onSelect }: MapViewProps) {
       <div className="pointer-events-none absolute bottom-4 left-4 rounded-md border border-white/10 bg-ink-950/85 p-3 text-xs text-slate-300 shadow-panel backdrop-blur">
         <p className="mb-2 font-semibold text-white">Marker legend</p>
         <div className="grid grid-cols-2 gap-x-3 gap-y-1">
-          {(["potential", "in_review", "negotiating", "owned"] as const).map(
+          {(["watchlist", "interested", "evaluating", "negotiating", "controlled", "passed"] as const).map(
             (status) => (
               <span key={status} className="flex items-center gap-2">
                 <span

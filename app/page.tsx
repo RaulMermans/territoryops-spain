@@ -827,9 +827,9 @@ function ProvinceList({
                 {province.province}
               </span>
               <span className="text-xs text-slate-500">
-                {province.totalLocations} total / A {province.archivedLocations} / P{" "}
-                {province.potentialCount} / N {province.negotiatingCount} / O{" "}
-                {province.ownedCount}
+                {province.totalLocations} total / A {province.archivedLocations} / I{" "}
+                {province.interestedCount} / N {province.negotiatingCount} / C{" "}
+                {province.controlledCount}
               </span>
             </span>
             <span className="shrink-0 font-mono text-xs text-slate-300">

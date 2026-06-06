@@ -1,7 +1,7 @@
 import type { LocationStatus, RealEstateLocation } from "@/types/location";
 import { assetTypes, statuses } from "@/lib/status";
 
-export const csvColumns = [
+const coreCsvColumns = [
   "id",
   "name",
   "address",
@@ -23,6 +23,26 @@ export const csvColumns = [
   "createdAt",
   "updatedAt"
 ] as const;
+
+const extendedCsvColumns = [
+  "interestLevel",
+  "controlType",
+  "askingPrice",
+  "targetPrice",
+  "monthlyRent",
+  "expectedCapex",
+  "probability",
+  "nextAction",
+  "nextActionDate",
+  "contactName",
+  "contactRole",
+  "contactPhone",
+  "contactEmail",
+  "lastContactedAt",
+  "decisionReason"
+] as const;
+
+export const csvColumns = [...coreCsvColumns, ...extendedCsvColumns] as const;
 
 const duplicateCoordinateThreshold = 0.0002;
 
@@ -62,9 +82,7 @@ export function countByStatus(
 export function pipelineValue(locations: RealEstateLocation[]) {
   return locations
     .filter((location) =>
-      ["potential", "in_review", "negotiating"].includes(
-        location.status
-      )
+      ["interested", "evaluating", "negotiating"].includes(location.status)
     )
     .reduce((total, location) => total + (location.estimatedValue ?? 0), 0);
 }
@@ -119,10 +137,14 @@ function normalizeStatus(value: unknown): LocationStatus | null {
   }
 
   const legacyStatusMap: Record<string, LocationStatus> = {
-    scouted: "potential",
-    contacted: "in_review",
-    under_review: "in_review",
-    closed_lost: "rejected"
+    potential: "interested",
+    in_review: "evaluating",
+    owned: "controlled",
+    rejected: "passed",
+    scouted: "interested",
+    contacted: "evaluating",
+    under_review: "evaluating",
+    closed_lost: "passed"
   };
 
   return legacyStatusMap[value] ?? null;
@@ -134,6 +156,21 @@ function isOptionalString(value: unknown) {
 
 function isOptionalNumber(value: unknown) {
   return value === undefined || (typeof value === "number" && Number.isFinite(value));
+}
+
+function isOptionalInterestLevel(value: unknown) {
+  return (
+    value === undefined ||
+    (typeof value === "string" && ["low", "medium", "high"].includes(value))
+  );
+}
+
+function isOptionalControlType(value: unknown) {
+  return (
+    value === undefined ||
+    (typeof value === "string" &&
+      ["owned", "leased", "option", "negotiation", "watchlist", "none"].includes(value))
+  );
 }
 
 export function isRealEstateLocation(
@@ -172,7 +209,22 @@ export function isRealEstateLocation(
     isOptionalString(value.owner) &&
     isOptionalString(value.notes) &&
     isOptionalNumber(value.estimatedValue) &&
-    isOptionalNumber(value.surfaceAreaM2)
+    isOptionalNumber(value.surfaceAreaM2) &&
+    isOptionalInterestLevel(value.interestLevel) &&
+    isOptionalControlType(value.controlType) &&
+    isOptionalNumber(value.askingPrice) &&
+    isOptionalNumber(value.targetPrice) &&
+    isOptionalNumber(value.monthlyRent) &&
+    isOptionalNumber(value.expectedCapex) &&
+    isOptionalNumber(value.probability) &&
+    isOptionalString(value.nextAction) &&
+    isOptionalString(value.nextActionDate) &&
+    isOptionalString(value.contactName) &&
+    isOptionalString(value.contactRole) &&
+    isOptionalString(value.contactPhone) &&
+    isOptionalString(value.contactEmail) &&
+    isOptionalString(value.lastContactedAt) &&
+    isOptionalString(value.decisionReason)
   );
 }
 
@@ -285,6 +337,23 @@ export function getDuplicateWarningsForLocation(
     });
 }
 
+export function needsAttentionCount(locations: RealEstateLocation[]) {
+  const now = new Date().toISOString();
+
+  return locations.filter((location) => {
+    if (isArchived(location)) {
+      return false;
+    }
+
+    const overdue = Boolean(location.nextActionDate && location.nextActionDate < now);
+    const missingAction = !location.nextAction?.trim();
+    const negotiatingNoContact =
+      location.status === "negotiating" && !location.contactName?.trim();
+
+    return overdue || missingAction || negotiatingNoContact;
+  }).length;
+}
+
 export function getDataHealth(locations: RealEstateLocation[]) {
   const duplicates = findPotentialDuplicates(locations);
 
@@ -302,7 +371,8 @@ export function getDataHealth(locations: RealEstateLocation[]) {
     invalidCoordinates: locations.filter((location) => !hasValidCoordinates(location))
       .length,
     potentialDuplicates: duplicates.duplicateIds.size,
-    duplicatePairs: duplicates.pairs
+    duplicatePairs: duplicates.pairs,
+    needsAttention: needsAttentionCount(locations)
   };
 }
 
@@ -314,9 +384,9 @@ export function getProvinceSummaries(locations: RealEstateLocation[]) {
       totalLocations: number;
       activeLocations: number;
       archivedLocations: number;
-      potentialCount: number;
+      interestedCount: number;
       negotiatingCount: number;
-      ownedCount: number;
+      controlledCount: number;
       estimatedPipelineValue: number;
     }
   >();
@@ -330,23 +400,21 @@ export function getProvinceSummaries(locations: RealEstateLocation[]) {
         totalLocations: 0,
         activeLocations: 0,
         archivedLocations: 0,
-        potentialCount: 0,
+        interestedCount: 0,
         negotiatingCount: 0,
-        ownedCount: 0,
+        controlledCount: 0,
         estimatedPipelineValue: 0
       };
 
     summary.totalLocations += 1;
     summary.activeLocations += isArchived(location) ? 0 : 1;
     summary.archivedLocations += isArchived(location) ? 1 : 0;
-    summary.potentialCount += location.status === "potential" ? 1 : 0;
+    summary.interestedCount += location.status === "interested" ? 1 : 0;
     summary.negotiatingCount += location.status === "negotiating" ? 1 : 0;
-    summary.ownedCount += location.status === "owned" ? 1 : 0;
+    summary.controlledCount += location.status === "controlled" ? 1 : 0;
 
     if (
-      ["potential", "in_review", "negotiating"].includes(
-        location.status
-      )
+      ["interested", "evaluating", "negotiating"].includes(location.status)
     ) {
       summary.estimatedPipelineValue += location.estimatedValue ?? 0;
     }
@@ -448,7 +516,7 @@ export function parseLocationsCsv(csv: string) {
 
   const header = rows[0].map((column) => column.trim());
 
-  if (!csvColumns.every((column) => header.includes(column))) {
+  if (!coreCsvColumns.every((column) => header.includes(column))) {
     return null;
   }
 
@@ -479,7 +547,22 @@ export function parseLocationsCsv(csv: string) {
       owner: optionalCsvString(record.get("owner")),
       notes: optionalCsvString(record.get("notes")),
       createdAt: record.get("createdAt")?.trim() ?? "",
-      updatedAt: record.get("updatedAt")?.trim() ?? ""
+      updatedAt: record.get("updatedAt")?.trim() ?? "",
+      interestLevel: optionalCsvString(record.get("interestLevel")) as RealEstateLocation["interestLevel"],
+      controlType: optionalCsvString(record.get("controlType")) as RealEstateLocation["controlType"],
+      askingPrice: optionalCsvNumber(record.get("askingPrice")),
+      targetPrice: optionalCsvNumber(record.get("targetPrice")),
+      monthlyRent: optionalCsvNumber(record.get("monthlyRent")),
+      expectedCapex: optionalCsvNumber(record.get("expectedCapex")),
+      probability: optionalCsvNumber(record.get("probability")),
+      nextAction: optionalCsvString(record.get("nextAction")),
+      nextActionDate: optionalCsvString(record.get("nextActionDate")),
+      contactName: optionalCsvString(record.get("contactName")),
+      contactRole: optionalCsvString(record.get("contactRole")),
+      contactPhone: optionalCsvString(record.get("contactPhone")),
+      contactEmail: optionalCsvString(record.get("contactEmail")),
+      lastContactedAt: optionalCsvString(record.get("lastContactedAt")),
+      decisionReason: optionalCsvString(record.get("decisionReason"))
     };
 
     return location;

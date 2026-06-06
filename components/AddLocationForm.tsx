@@ -34,6 +34,21 @@ type FormState = {
   estimatedValue: string;
   surfaceAreaM2: string;
   notes: string;
+  interestLevel: string;
+  controlType: string;
+  askingPrice: string;
+  targetPrice: string;
+  monthlyRent: string;
+  expectedCapex: string;
+  probability: string;
+  nextAction: string;
+  nextActionDate: string;
+  contactName: string;
+  contactRole: string;
+  contactPhone: string;
+  contactEmail: string;
+  lastContactedAt: string;
+  decisionReason: string;
 };
 
 const initialForm: FormState = {
@@ -45,11 +60,26 @@ const initialForm: FormState = {
   city: "",
   province: "",
   assetType: "retail",
-  status: "potential",
+  status: "interested",
   priority: "medium",
   estimatedValue: "",
   surfaceAreaM2: "",
-  notes: ""
+  notes: "",
+  interestLevel: "",
+  controlType: "",
+  askingPrice: "",
+  targetPrice: "",
+  monthlyRent: "",
+  expectedCapex: "",
+  probability: "",
+  nextAction: "",
+  nextActionDate: "",
+  contactName: "",
+  contactRole: "",
+  contactPhone: "",
+  contactEmail: "",
+  lastContactedAt: "",
+  decisionReason: ""
 };
 
 function formFromLocation(location: RealEstateLocation | null): FormState {
@@ -70,7 +100,22 @@ function formFromLocation(location: RealEstateLocation | null): FormState {
     priority: location.priority,
     estimatedValue: location.estimatedValue ? String(location.estimatedValue) : "",
     surfaceAreaM2: location.surfaceAreaM2 ? String(location.surfaceAreaM2) : "",
-    notes: location.notes ?? ""
+    notes: location.notes ?? "",
+    interestLevel: location.interestLevel ?? "",
+    controlType: location.controlType ?? "",
+    askingPrice: location.askingPrice ? String(location.askingPrice) : "",
+    targetPrice: location.targetPrice ? String(location.targetPrice) : "",
+    monthlyRent: location.monthlyRent ? String(location.monthlyRent) : "",
+    expectedCapex: location.expectedCapex ? String(location.expectedCapex) : "",
+    probability: location.probability !== undefined ? String(location.probability) : "",
+    nextAction: location.nextAction ?? "",
+    nextActionDate: location.nextActionDate ?? "",
+    contactName: location.contactName ?? "",
+    contactRole: location.contactRole ?? "",
+    contactPhone: location.contactPhone ?? "",
+    contactEmail: location.contactEmail ?? "",
+    lastContactedAt: location.lastContactedAt ?? "",
+    decisionReason: location.decisionReason ?? ""
   };
 }
 
@@ -108,8 +153,6 @@ export function AddLocationForm({
       status: form.status,
       assetType: form.assetType,
       priority: form.priority,
-      estimatedValue: undefined,
-      surfaceAreaM2: undefined,
       notes: form.notes || undefined,
       createdAt: location?.createdAt ?? "",
       updatedAt: location?.updatedAt ?? ""
@@ -150,6 +193,21 @@ export function AddLocationForm({
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
+    if (!form.name.trim()) {
+      setError("Name is required.");
+      return;
+    }
+
+    if (!form.city.trim()) {
+      setError("City is required.");
+      return;
+    }
+
+    if (!form.province.trim()) {
+      setError("Province is required.");
+      return;
+    }
+
     const parsedFromUrl = form.googleMapsUrl
       ? extractCoordinatesFromGoogleMapsUrl(form.googleMapsUrl)
       : null;
@@ -167,6 +225,48 @@ export function AddLocationForm({
       return;
     }
 
+    const estimatedValue = toOptionalNumber(form.estimatedValue);
+    if (estimatedValue !== undefined && estimatedValue < 0) {
+      setError("Estimated value cannot be negative.");
+      return;
+    }
+
+    const surfaceAreaM2 = toOptionalNumber(form.surfaceAreaM2);
+    if (surfaceAreaM2 !== undefined && surfaceAreaM2 < 0) {
+      setError("Surface area cannot be negative.");
+      return;
+    }
+
+    const askingPrice = toOptionalNumber(form.askingPrice);
+    if (askingPrice !== undefined && askingPrice < 0) {
+      setError("Asking price cannot be negative.");
+      return;
+    }
+
+    const targetPrice = toOptionalNumber(form.targetPrice);
+    if (targetPrice !== undefined && targetPrice < 0) {
+      setError("Target price cannot be negative.");
+      return;
+    }
+
+    const monthlyRent = toOptionalNumber(form.monthlyRent);
+    if (monthlyRent !== undefined && monthlyRent < 0) {
+      setError("Monthly rent cannot be negative.");
+      return;
+    }
+
+    const expectedCapex = toOptionalNumber(form.expectedCapex);
+    if (expectedCapex !== undefined && expectedCapex < 0) {
+      setError("Expected capex cannot be negative.");
+      return;
+    }
+
+    const probability = toOptionalNumber(form.probability);
+    if (probability !== undefined && (probability < 0 || probability > 100)) {
+      setError("Probability must be between 0 and 100.");
+      return;
+    }
+
     onSubmit({
       name: form.name.trim(),
       googleMapsUrl: form.googleMapsUrl.trim() || undefined,
@@ -178,9 +278,26 @@ export function AddLocationForm({
       assetType: form.assetType as NewLocationInput["assetType"],
       status: form.status as NewLocationInput["status"],
       priority: form.priority as NewLocationInput["priority"],
-      estimatedValue: toOptionalNumber(form.estimatedValue),
-      surfaceAreaM2: toOptionalNumber(form.surfaceAreaM2),
-      notes: form.notes.trim() || undefined
+      estimatedValue,
+      surfaceAreaM2,
+      source: undefined,
+      owner: undefined,
+      notes: form.notes.trim() || undefined,
+      interestLevel: (form.interestLevel as RealEstateLocation["interestLevel"]) || undefined,
+      controlType: (form.controlType as RealEstateLocation["controlType"]) || undefined,
+      askingPrice,
+      targetPrice,
+      monthlyRent,
+      expectedCapex,
+      probability,
+      nextAction: form.nextAction.trim() || undefined,
+      nextActionDate: form.nextActionDate.trim() || undefined,
+      contactName: form.contactName.trim() || undefined,
+      contactRole: form.contactRole.trim() || undefined,
+      contactPhone: form.contactPhone.trim() || undefined,
+      contactEmail: form.contactEmail.trim() || undefined,
+      lastContactedAt: form.lastContactedAt.trim() || undefined,
+      decisionReason: form.decisionReason.trim() || undefined
     });
 
     setForm(initialForm);
@@ -195,8 +312,7 @@ export function AddLocationForm({
             {isEditing ? "Edit location" : "New location"}
           </h2>
           <p className="text-xs text-slate-500">
-            Google Maps URL is optional. Enter coordinates manually or extract
-            them from a supported link.
+            Required: name, city, province, coordinates or Maps URL.
           </p>
         </div>
         <button
@@ -210,6 +326,7 @@ export function AddLocationForm({
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-3">
+        {/* Quick Capture */}
         <Field label="Name" required>
           <input
             required
@@ -260,14 +377,6 @@ export function AddLocationForm({
           </Field>
         </div>
 
-        <Field label="Address">
-          <input
-            value={form.address}
-            onChange={(event) => updateField("address", event.target.value)}
-            className="input"
-          />
-        </Field>
-
         <div className="grid grid-cols-2 gap-2">
           <Field label="City" required>
             <input
@@ -287,76 +396,265 @@ export function AddLocationForm({
           </Field>
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
-          <Field label="Asset type">
-            <select
-              value={form.assetType}
-              onChange={(event) => updateField("assetType", event.target.value)}
-              className="input"
-            >
-              {assetTypes.map((assetType) => (
-                <option key={assetType} value={assetType}>
-                  {formatAssetType(assetType)}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Status" required>
-            <select
-              value={form.status}
-              onChange={(event) => updateField("status", event.target.value)}
-              className="input"
-            >
-              {statuses.map((status) => (
-                <option key={status} value={status}>
-                  {statusMeta[status].label}
-                </option>
-              ))}
-            </select>
-          </Field>
-        </div>
-
-        <div className="grid grid-cols-3 gap-2">
-          <Field label="Priority">
-            <select
-              value={form.priority}
-              onChange={(event) => updateField("priority", event.target.value)}
-              className="input"
-            >
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-            </select>
-          </Field>
-          <Field label="Value">
-            <input
-              inputMode="numeric"
-              value={form.estimatedValue}
-              onChange={(event) =>
-                updateField("estimatedValue", event.target.value)
-              }
-              className="input"
-            />
-          </Field>
-          <Field label="m2">
-            <input
-              inputMode="numeric"
-              value={form.surfaceAreaM2}
-              onChange={(event) =>
-                updateField("surfaceAreaM2", event.target.value)
-              }
-              className="input"
-            />
-          </Field>
-        </div>
-
-        <Field label="Notes">
-          <textarea
-            value={form.notes}
-            onChange={(event) => updateField("notes", event.target.value)}
-            className="input min-h-20 resize-y"
-          />
+        <Field label="Status" required>
+          <select
+            value={form.status}
+            onChange={(event) => updateField("status", event.target.value)}
+            className="input"
+          >
+            {statuses.map((status) => (
+              <option key={status} value={status}>
+                {statusMeta[status].label}
+              </option>
+            ))}
+          </select>
         </Field>
+
+        {/* Section A: Deal details */}
+        <details className="rounded-md border border-white/10">
+          <summary className="cursor-pointer px-3 py-2 text-xs font-semibold uppercase text-slate-400 hover:text-white">
+            Deal details
+          </summary>
+          <div className="space-y-3 border-t border-white/10 p-3">
+            <div className="grid grid-cols-2 gap-2">
+              <Field label="Asset type">
+                <select
+                  value={form.assetType}
+                  onChange={(event) => updateField("assetType", event.target.value)}
+                  className="input"
+                >
+                  {assetTypes.map((assetType) => (
+                    <option key={assetType} value={assetType}>
+                      {formatAssetType(assetType)}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Priority">
+                <select
+                  value={form.priority}
+                  onChange={(event) => updateField("priority", event.target.value)}
+                  className="input"
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </Field>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <Field label="Interest level">
+                <select
+                  value={form.interestLevel}
+                  onChange={(event) => updateField("interestLevel", event.target.value)}
+                  className="input"
+                >
+                  <option value="">— not set —</option>
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </Field>
+              <Field label="Control type">
+                <select
+                  value={form.controlType}
+                  onChange={(event) => updateField("controlType", event.target.value)}
+                  className="input"
+                >
+                  <option value="">— not set —</option>
+                  <option value="none">None</option>
+                  <option value="watchlist">Watchlist</option>
+                  <option value="option">Option</option>
+                  <option value="negotiation">Negotiation</option>
+                  <option value="leased">Leased</option>
+                  <option value="owned">Owned</option>
+                </select>
+              </Field>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <Field label="Asking price (€)">
+                <input
+                  inputMode="numeric"
+                  value={form.askingPrice}
+                  onChange={(event) => updateField("askingPrice", event.target.value)}
+                  className="input"
+                  placeholder="0"
+                />
+              </Field>
+              <Field label="Target price (€)">
+                <input
+                  inputMode="numeric"
+                  value={form.targetPrice}
+                  onChange={(event) => updateField("targetPrice", event.target.value)}
+                  className="input"
+                  placeholder="0"
+                />
+              </Field>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <Field label="Monthly rent (€)">
+                <input
+                  inputMode="numeric"
+                  value={form.monthlyRent}
+                  onChange={(event) => updateField("monthlyRent", event.target.value)}
+                  className="input"
+                  placeholder="0"
+                />
+              </Field>
+              <Field label="Expected capex (€)">
+                <input
+                  inputMode="numeric"
+                  value={form.expectedCapex}
+                  onChange={(event) => updateField("expectedCapex", event.target.value)}
+                  className="input"
+                  placeholder="0"
+                />
+              </Field>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              <Field label="Est. value (€)">
+                <input
+                  inputMode="numeric"
+                  value={form.estimatedValue}
+                  onChange={(event) =>
+                    updateField("estimatedValue", event.target.value)
+                  }
+                  className="input"
+                  placeholder="0"
+                />
+              </Field>
+              <Field label="m2">
+                <input
+                  inputMode="numeric"
+                  value={form.surfaceAreaM2}
+                  onChange={(event) =>
+                    updateField("surfaceAreaM2", event.target.value)
+                  }
+                  className="input"
+                  placeholder="0"
+                />
+              </Field>
+              <Field label="Probability %">
+                <input
+                  inputMode="numeric"
+                  value={form.probability}
+                  onChange={(event) => updateField("probability", event.target.value)}
+                  className="input"
+                  placeholder="0–100"
+                />
+              </Field>
+            </div>
+
+            <Field label="Address">
+              <input
+                value={form.address}
+                onChange={(event) => updateField("address", event.target.value)}
+                className="input"
+              />
+            </Field>
+          </div>
+        </details>
+
+        {/* Section B: Contact / follow-up */}
+        <details className="rounded-md border border-white/10">
+          <summary className="cursor-pointer px-3 py-2 text-xs font-semibold uppercase text-slate-400 hover:text-white">
+            Contact / follow-up
+          </summary>
+          <div className="space-y-3 border-t border-white/10 p-3">
+            <div className="grid grid-cols-2 gap-2">
+              <Field label="Contact name">
+                <input
+                  value={form.contactName}
+                  onChange={(event) => updateField("contactName", event.target.value)}
+                  className="input"
+                />
+              </Field>
+              <Field label="Contact role">
+                <input
+                  value={form.contactRole}
+                  onChange={(event) => updateField("contactRole", event.target.value)}
+                  className="input"
+                  placeholder="Broker, owner…"
+                />
+              </Field>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <Field label="Phone">
+                <input
+                  inputMode="tel"
+                  value={form.contactPhone}
+                  onChange={(event) => updateField("contactPhone", event.target.value)}
+                  className="input"
+                />
+              </Field>
+              <Field label="Email">
+                <input
+                  inputMode="email"
+                  value={form.contactEmail}
+                  onChange={(event) => updateField("contactEmail", event.target.value)}
+                  className="input"
+                />
+              </Field>
+            </div>
+
+            <Field label="Last contacted">
+              <input
+                type="date"
+                value={form.lastContactedAt}
+                onChange={(event) => updateField("lastContactedAt", event.target.value)}
+                className="input"
+              />
+            </Field>
+
+            <Field label="Next action">
+              <input
+                value={form.nextAction}
+                onChange={(event) => updateField("nextAction", event.target.value)}
+                className="input"
+                placeholder="e.g. Submit LOI, Schedule visit"
+              />
+            </Field>
+
+            <Field label="Next action date">
+              <input
+                type="date"
+                value={form.nextActionDate}
+                onChange={(event) => updateField("nextActionDate", event.target.value)}
+                className="input"
+              />
+            </Field>
+          </div>
+        </details>
+
+        {/* Section C: Notes */}
+        <details className="rounded-md border border-white/10">
+          <summary className="cursor-pointer px-3 py-2 text-xs font-semibold uppercase text-slate-400 hover:text-white">
+            Notes
+          </summary>
+          <div className="space-y-3 border-t border-white/10 p-3">
+            <Field label="Notes">
+              <textarea
+                value={form.notes}
+                onChange={(event) => updateField("notes", event.target.value)}
+                className="input min-h-20 resize-y"
+              />
+            </Field>
+
+            <Field label="Decision reason">
+              <textarea
+                value={form.decisionReason}
+                onChange={(event) => updateField("decisionReason", event.target.value)}
+                className="input min-h-16 resize-y"
+                placeholder="Why passed, archived, or controlled"
+              />
+            </Field>
+          </div>
+        </details>
 
         {error ? (
           <p className="rounded-md border border-red-400/25 bg-red-400/10 px-3 py-2 text-sm text-red-100">

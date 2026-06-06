@@ -37,8 +37,21 @@ export function LocationDrawer({
     );
   }
 
+  const hasContact =
+    location.contactName ||
+    location.contactRole ||
+    location.contactPhone ||
+    location.contactEmail;
+
+  const hasDealInfo =
+    location.askingPrice !== undefined ||
+    location.targetPrice !== undefined ||
+    location.monthlyRent !== undefined ||
+    location.expectedCapex !== undefined ||
+    location.probability !== undefined;
+
   return (
-    <aside className="border-t border-white/10 bg-ink-900 p-5 lg:border-l lg:border-t-0">
+    <aside className="border-t border-white/10 bg-ink-900 p-5 lg:border-l lg:border-t-0 lg:overflow-y-auto lg:max-h-[calc(100dvh-81px)]">
       <div className="mb-5 flex items-start justify-between gap-4">
         <div>
           <span
@@ -78,15 +91,89 @@ export function LocationDrawer({
           label="Coordinates"
           value={`${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)}`}
         />
+        {location.controlType ? (
+          <DetailRow
+            label="Control type"
+            value={location.controlType.charAt(0).toUpperCase() + location.controlType.slice(1)}
+          />
+        ) : null}
         {location.owner ? <DetailRow label="Owner" value={location.owner} /> : null}
         {location.source ? <DetailRow label="Source" value={location.source} /> : null}
       </div>
+
+      {hasDealInfo ? (
+        <section className="mt-5 rounded-md border border-white/10 bg-white/[0.035] p-4">
+          <h3 className="mb-3 text-sm font-semibold text-white">Deal info</h3>
+          <div className="space-y-2">
+            {location.askingPrice !== undefined ? (
+              <DetailRow label="Asking price" value={formatCurrency(location.askingPrice)} />
+            ) : null}
+            {location.targetPrice !== undefined ? (
+              <DetailRow label="Target price" value={formatCurrency(location.targetPrice)} />
+            ) : null}
+            {location.monthlyRent !== undefined ? (
+              <DetailRow label="Monthly rent" value={formatCurrency(location.monthlyRent)} />
+            ) : null}
+            {location.expectedCapex !== undefined ? (
+              <DetailRow label="Expected capex" value={formatCurrency(location.expectedCapex)} />
+            ) : null}
+            {location.probability !== undefined ? (
+              <DetailRow label="Probability" value={`${location.probability}%`} />
+            ) : null}
+          </div>
+        </section>
+      ) : null}
+
+      {location.nextAction || location.nextActionDate ? (
+        <section className="mt-5 rounded-md border border-amber-300/20 bg-amber-300/[0.05] p-4">
+          <h3 className="mb-2 text-sm font-semibold text-white">Next action</h3>
+          {location.nextAction ? (
+            <p className="text-sm text-amber-100">{location.nextAction}</p>
+          ) : null}
+          {location.nextActionDate ? (
+            <p className="mt-1 text-xs text-slate-400">
+              Due {location.nextActionDate}
+            </p>
+          ) : null}
+        </section>
+      ) : null}
+
+      {hasContact ? (
+        <section className="mt-5 rounded-md border border-white/10 bg-white/[0.035] p-4">
+          <h3 className="mb-3 text-sm font-semibold text-white">Contact</h3>
+          <div className="space-y-2">
+            {location.contactName ? (
+              <DetailRow label="Name" value={location.contactName} />
+            ) : null}
+            {location.contactRole ? (
+              <DetailRow label="Role" value={location.contactRole} />
+            ) : null}
+            {location.contactPhone ? (
+              <DetailRow label="Phone" value={location.contactPhone} />
+            ) : null}
+            {location.contactEmail ? (
+              <DetailRow label="Email" value={location.contactEmail} />
+            ) : null}
+            {location.lastContactedAt ? (
+              <DetailRow label="Last contact" value={location.lastContactedAt} />
+            ) : null}
+          </div>
+        </section>
+      ) : null}
 
       <section className="mt-5 rounded-md border border-white/10 bg-white/[0.035] p-4">
         <h3 className="text-sm font-semibold text-white">Notes</h3>
         <p className="mt-2 text-sm leading-6 text-slate-400">
           {location.notes || "No notes recorded."}
         </p>
+        {location.decisionReason ? (
+          <>
+            <h3 className="mt-4 text-sm font-semibold text-white">Decision reason</h3>
+            <p className="mt-2 text-sm leading-6 text-slate-400">
+              {location.decisionReason}
+            </p>
+          </>
+        ) : null}
       </section>
 
       <div className="mt-5 grid grid-cols-2 gap-2">
