@@ -37,6 +37,38 @@ Real estate operations often begin with scattered map links, notes, and spreadsh
 - Vitest (tests)
 - ESLint
 
+## Views
+
+A view switcher above the main panel lets you change how the filtered location list is displayed. Map, Table, and Pipeline views all share the same search, status filter, province filter, and archived-visibility rules — switching views never resets your selection, filters, or search.
+
+- **Map** (default): Spain-centered Leaflet map with status-colored markers. Works exactly as before.
+- **Table**: Operational spreadsheet-style view of every visible location with sortable columns.
+- **Pipeline**: Kanban-style board grouped by status, for scanning the deal pipeline at a glance.
+
+### Table View
+
+Columns: Name, City, Province, Status, Priority, Interest, Control type, Next action, Next action date, Estimated value, Asking price, Target price, Contact, Updated date.
+
+- Clicking a row opens the location drawer.
+- Empty optional fields show as `—`.
+- Overdue `nextActionDate` is marked in red with a warning glyph.
+- Negotiating records without a `contactName` show a "No contact" warning.
+- High-priority records carry a `HIGH` badge next to the name.
+- Click a column header (Status, Priority, Due, Est. value, Updated) to sort; click again to reverse direction.
+- A summary bar above the table shows total visible records, needs-attention count, negotiating count, and controlled count.
+- An empty state with a hint to adjust filters appears when no records match.
+
+### Pipeline View
+
+Kanban columns: Watchlist, Interested, Evaluating, Negotiating, Controlled, Passed. Archived locations are excluded from the pipeline columns (the existing archived-visibility filter governs whether archived records appear in the underlying filtered list at all).
+
+Each card shows name, city/province, priority, interest level, estimated value, next action, next action date, a contact warning when negotiating without a contact, and an overdue warning when the next action date has passed.
+
+- Clicking a card opens the location drawer.
+- Each column header shows a record count; empty columns show a subtle "No records" placeholder.
+- A summary bar shows total visible records, active opportunities, negotiating count, controlled count, and needs-attention count.
+- Status changes still happen through the existing edit flow in the drawer/form — no drag-and-drop.
+
 ## Features
 
 - Spain-centered interactive map with status-colored markers.
@@ -54,7 +86,7 @@ Real estate operations often begin with scattered map links, notes, and spreadsh
 - Collapsible data health panel with drilldowns for missing Google Maps URL, missing estimated value, missing notes, invalid coordinates, and possible duplicates.
 - Duplicate detection by same normalized name/city, same Google Maps URL, or near-identical coordinates.
 - Province summaries ranked by active locations and estimated pipeline value.
-- Needs attention metric: active records with overdue next action date, missing next action, or negotiating without contact.
+- Needs-attention drilldown: active records with an overdue next action date, a missing next action, or a negotiating status without a contact name — surfaced as clickable items, not just a count.
 
 ## Status Model
 
@@ -69,6 +101,16 @@ Locations use a business-control workflow:
 - `archived`: Archived — hidden from default view
 
 Archived locations are hidden from `All statuses` but remain filterable through the `Archived` status.
+
+## Needs Attention
+
+A location needs attention when, while not archived, any of the following is true:
+
+- `nextActionDate` is in the past (date-only comparison against today — a date due *today* does **not** count as overdue, and a date due *tomorrow* never counts as overdue).
+- `nextAction` is empty.
+- `status` is `negotiating` and `contactName` is empty.
+
+The "Needs attention" panel in the sidebar lists the affected records (with the specific reasons) as clickable items that open the drawer directly — it is a drilldown, not a passive count.
 
 ## Legacy Status Migration
 
@@ -113,6 +155,16 @@ The form is split into a quick-capture section and three collapsible sections:
 ## Import And Export
 
 JSON import accepts either an array of full `RealEstateLocation` records or an object with a `locations` array. Valid imports replace the current local dataset.
+
+### Import Validation Rules
+
+A record is rejected (and the whole import fails) if any of these business-control numbers are invalid:
+
+- `estimatedValue`, `surfaceAreaM2`, `askingPrice`, `targetPrice`, `monthlyRent`, `expectedCapex` must be finite numbers that are **zero or positive** — negative values are rejected.
+- `probability` must be a finite number **between 0 and 100 inclusive** — values below 0 or above 100 are rejected.
+- Zero is a valid value for all of the above and is preserved (see zero-value display below).
+
+These checks apply identically to JSON and CSV imports.
 
 CSV import/export uses these columns:
 
@@ -173,11 +225,21 @@ npm test
 - Drawer shows deal info (asking/target price, rent, capex, probability) only when populated.
 - Drawer shows next action section only when a next action or date is set.
 - Drawer shows contact section only when contact info is filled.
-- Needs attention metric counts active records with overdue date, missing action, or negotiating without contact.
+- Needs attention drilldown lists active records with an overdue date (date-only — due today is not overdue), missing action, or negotiating without contact, and clicking an item opens the drawer.
+- A location with `nextActionDate` set to today is **not** flagged as overdue; yesterday is; tomorrow is not.
+- `formatCurrency(0)` and `formatArea(0)` display real zero values, not "Not estimated"/"Not recorded".
 - JSON export/import works.
 - CSV export/import works and includes new columns.
 - Old CSV (without new columns) still imports successfully.
 - Invalid JSON/CSV import shows a safe error.
+- Imported records with negative `askingPrice`, `monthlyRent`, or other business numbers are rejected.
+- Imported records with `probability` below 0 or above 100 are rejected; 0 and 100 are accepted.
+- View switcher toggles between Map, Table, and Pipeline without resetting search, filters, or selection.
+- Map View renders and behaves exactly as before.
+- Table View: columns render correctly, sorting works on Status/Priority/Due/Est. value/Updated, overdue dates and missing-contact negotiating rows are visually marked, clicking a row opens the drawer.
+- Table/Pipeline summary bars show correct visible/attention/negotiating/controlled counts.
+- Pipeline View: cards render in the correct status column, excludes archived, shows warnings for overdue and missing contact, clicking a card opens the drawer, empty columns show "No records".
+- Empty states: no records at all invites adding the first location; filtered-to-empty suggests clearing filters; empty pipeline columns show a subtle placeholder.
 
 ## Demo Walkthrough Script
 
@@ -189,7 +251,8 @@ npm test
 6. Load sample demo data to demonstrate a fuller portfolio view.
 7. Filter by status and click a province summary row.
 8. Open a location drawer from the map or list. Observe deal info and next action sections.
-9. Open the data health panel and inspect a drilldown.
+8b. Switch between Map, Table, and Pipeline views using the view switcher — note filters and selection persist. Sort the table by status or next action date, and scan the pipeline columns for overdue/contact warnings.
+9. Open the data health panel and inspect a drilldown, then click a "Needs attention" item to jump straight to its drawer.
 10. Export the dataset as CSV and JSON.
 11. Clear all local data to return to the empty personal workspace.
 
@@ -212,6 +275,10 @@ public/screenshots/province-summary.txt
 - CSV parsing is intentionally lightweight and expects the documented columns.
 - Province summaries are table-based; no province GeoJSON or boundary map yet.
 - No user accounts, permissions, audit log, or multi-user collaboration.
+- **No backend yet** — everything runs client-side against localStorage.
+- **No Supabase yet** — no remote database or sync layer.
+- **No auth yet** — single-user, browser-local workspace.
+- **No drag-and-drop yet** — Pipeline columns are read-only views; status changes go through the existing edit flow in the drawer/form.
 - `npm audit` reports two moderate findings from Next.js depending on a nested `postcss <8.5.10`. The only suggested automated fix is `npm audit fix --force`, which would downgrade Next to `9.3.3`; that is a breaking change and was intentionally not applied.
 
 ## Roadmap
@@ -235,6 +302,8 @@ territoryops-spain/
 +-- components/
 |   +-- AddLocationForm.tsx
 |   +-- LocationDrawer.tsx
+|   +-- LocationPipeline.tsx
+|   +-- LocationTable.tsx
 |   +-- MapView.tsx
 |   +-- MetricsCards.tsx
 |   +-- StatusFilter.tsx
@@ -242,9 +311,12 @@ territoryops-spain/
 +-- data/
 |   +-- mockLocations.ts
 +-- lib/
+|   +-- attention.ts
 |   +-- googleMaps.ts
 |   +-- locations.ts
+|   +-- pipeline.ts
 |   +-- status.ts
+|   +-- table.ts
 +-- tests/
 |   +-- locations.test.ts
 +-- types/

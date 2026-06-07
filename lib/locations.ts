@@ -53,7 +53,7 @@ export function createLocationId() {
 }
 
 export function formatCurrency(value?: number) {
-  if (!value) {
+  if (value === undefined || value === null) {
     return "Not estimated";
   }
 
@@ -65,7 +65,7 @@ export function formatCurrency(value?: number) {
 }
 
 export function formatArea(value?: number) {
-  if (!value) {
+  if (value === undefined || value === null) {
     return "Not recorded";
   }
 
@@ -154,8 +154,18 @@ function isOptionalString(value: unknown) {
   return value === undefined || typeof value === "string";
 }
 
-function isOptionalNumber(value: unknown) {
-  return value === undefined || (typeof value === "number" && Number.isFinite(value));
+function isOptionalNonNegativeNumber(value: unknown) {
+  return (
+    value === undefined ||
+    (typeof value === "number" && Number.isFinite(value) && value >= 0)
+  );
+}
+
+function isOptionalProbability(value: unknown) {
+  return (
+    value === undefined ||
+    (typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 100)
+  );
 }
 
 function isOptionalInterestLevel(value: unknown) {
@@ -208,15 +218,15 @@ export function isRealEstateLocation(
     isOptionalString(value.source) &&
     isOptionalString(value.owner) &&
     isOptionalString(value.notes) &&
-    isOptionalNumber(value.estimatedValue) &&
-    isOptionalNumber(value.surfaceAreaM2) &&
+    isOptionalNonNegativeNumber(value.estimatedValue) &&
+    isOptionalNonNegativeNumber(value.surfaceAreaM2) &&
     isOptionalInterestLevel(value.interestLevel) &&
     isOptionalControlType(value.controlType) &&
-    isOptionalNumber(value.askingPrice) &&
-    isOptionalNumber(value.targetPrice) &&
-    isOptionalNumber(value.monthlyRent) &&
-    isOptionalNumber(value.expectedCapex) &&
-    isOptionalNumber(value.probability) &&
+    isOptionalNonNegativeNumber(value.askingPrice) &&
+    isOptionalNonNegativeNumber(value.targetPrice) &&
+    isOptionalNonNegativeNumber(value.monthlyRent) &&
+    isOptionalNonNegativeNumber(value.expectedCapex) &&
+    isOptionalProbability(value.probability) &&
     isOptionalString(value.nextAction) &&
     isOptionalString(value.nextActionDate) &&
     isOptionalString(value.contactName) &&
@@ -338,14 +348,14 @@ export function getDuplicateWarningsForLocation(
 }
 
 export function needsAttentionCount(locations: RealEstateLocation[]) {
-  const now = new Date().toISOString();
+  const today = new Date().toISOString().slice(0, 10);
 
   return locations.filter((location) => {
     if (isArchived(location)) {
       return false;
     }
 
-    const overdue = Boolean(location.nextActionDate && location.nextActionDate < now);
+    const overdue = Boolean(location.nextActionDate && location.nextActionDate < today);
     const missingAction = !location.nextAction?.trim();
     const negotiatingNoContact =
       location.status === "negotiating" && !location.contactName?.trim();

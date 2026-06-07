@@ -6,8 +6,13 @@ import {
   needsAttentionCount,
   getDataHealth,
   isRealEstateLocation,
-  csvColumns
+  csvColumns,
+  formatCurrency,
+  formatArea
 } from "@/lib/locations";
+import { getAttentionItems } from "@/lib/attention";
+import { sortLocations } from "@/lib/table";
+import { groupByPipelineStatus } from "@/lib/pipeline";
 import { extractCoordinatesFromGoogleMapsUrl } from "@/lib/googleMaps";
 import type { RealEstateLocation } from "@/types/location";
 
@@ -356,5 +361,223 @@ describe("isRealEstateLocation", () => {
     for (const col of csvColumns) {
       expect(col in loc || loc[col as keyof typeof loc] === undefined).toBe(true);
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 7. Date-only overdue comparison edge cases
+// ---------------------------------------------------------------------------
+
+describe("needsAttentionCount date edge cases", () => {
+  it("due today is not overdue", () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const loc = makeLocation({ nextActionDate: today, nextAction: "Something" });
+    expect(needsAttentionCount([loc])).toBe(0);
+  });
+
+  it("yesterday is overdue", () => {
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    const loc = makeLocation({ nextActionDate: yesterday, nextAction: "Something" });
+    expect(needsAttentionCount([loc])).toBe(1);
+  });
+
+  it("tomorrow is not overdue", () => {
+    const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+    const loc = makeLocation({ nextActionDate: tomorrow, nextAction: "Something" });
+    expect(needsAttentionCount([loc])).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 8. Import validation — negative business numbers and probability range
+// ---------------------------------------------------------------------------
+
+describe("import validation — negative numbers and probability", () => {
+  it("rejects imported record with negative askingPrice", () => {
+    const loc = { ...makeLocation(), askingPrice: -1000 };
+    expect(parseLocationsImport([loc])).toBeNull();
+  });
+
+  it("rejects imported record with negative monthlyRent", () => {
+    const loc = { ...makeLocation(), monthlyRent: -500 };
+    expect(parseLocationsImport([loc])).toBeNull();
+  });
+
+  it("accepts askingPrice of 0", () => {
+    const loc = makeLocation({ askingPrice: 0 });
+    expect(parseLocationsImport([loc])).not.toBeNull();
+  });
+
+  it("rejects probability above 100", () => {
+    const loc = { ...makeLocation(), probability: 101 };
+    expect(parseLocationsImport([loc])).toBeNull();
+  });
+
+  it("rejects probability below 0", () => {
+    const loc = { ...makeLocation(), probability: -1 };
+    expect(parseLocationsImport([loc])).toBeNull();
+  });
+
+  it("accepts probability of 0 and 100", () => {
+    expect(parseLocationsImport([makeLocation({ probability: 0 })])).not.toBeNull();
+    expect(parseLocationsImport([makeLocation({ probability: 100 })])).not.toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 9. Zero-value formatting
+// ---------------------------------------------------------------------------
+
+describe("zero-value formatting", () => {
+  it("formatCurrency(0) returns a real currency value", () => {
+    const result = formatCurrency(0);
+    expect(result).not.toBe("Not estimated");
+    expect(result).toContain("0");
+  });
+
+  it("formatArea(0) returns a real area value", () => {
+    const result = formatArea(0);
+    expect(result).not.toBe("Not recorded");
+    expect(result).toContain("0");
+  });
+
+  it("formatCurrency(undefined) returns 'Not estimated'", () => {
+    expect(formatCurrency(undefined)).toBe("Not estimated");
+  });
+
+  it("formatArea(undefined) returns 'Not recorded'", () => {
+    expect(formatArea(undefined)).toBe("Not recorded");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 10. getAttentionItems helper
+// ---------------------------------------------------------------------------
+
+describe("getAttentionItems", () => {
+  it("returns overdue item when nextActionDate is in the past", () => {
+    const loc = makeLocation({ nextActionDate: "2020-01-01", nextAction: "Do something" });
+    const items = getAttentionItems([loc]);
+    expect(items).toHaveLength(1);
+    expect(items[0].reasons).toContain("overdue");
+  });
+
+  it("returns missingAction when nextAction is empty", () => {
+    const loc = makeLocation({ nextAction: undefined });
+    const items = getAttentionItems([loc]);
+    expect(items[0].reasons).toContain("missingAction");
+  });
+
+  it("returns negotiatingNoContact for negotiating without contactName", () => {
+    const loc = makeLocation({ status: "negotiating", nextAction: "Follow up", contactName: undefined });
+    const items = getAttentionItems([loc]);
+    expect(items[0].reasons).toContain("negotiatingNoContact");
+  });
+
+  it("does not include archived locations", () => {
+    const loc = makeLocation({ status: "archived", nextAction: undefined });
+    expect(getAttentionItems([loc])).toHaveLength(0);
+  });
+
+  it("can return multiple reasons for a single location", () => {
+    const loc = makeLocation({
+      status: "negotiating",
+      nextActionDate: "2020-01-01",
+      nextAction: undefined,
+      contactName: undefined
+    });
+    const items = getAttentionItems([loc]);
+    expect(items[0].reasons.length).toBeGreaterThan(1);
+  });
+
+  it("returns empty array when all locations are healthy", () => {
+    const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+    const loc = makeLocation({
+      status: "negotiating",
+      nextAction: "Call",
+      nextActionDate: tomorrow,
+      contactName: "Maria"
+    });
+    expect(getAttentionItems([loc])).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 11. sortLocations table helper
+// ---------------------------------------------------------------------------
+
+describe("sortLocations", () => {
+  it("sorts by estimatedValue ascending, undefined last", () => {
+    const locs = [
+      makeLocation({ id: "a", estimatedValue: 500000 }),
+      makeLocation({ id: "b", estimatedValue: 100000 }),
+      makeLocation({ id: "c", estimatedValue: undefined })
+    ];
+    const sorted = sortLocations(locs, "estimatedValue", "asc");
+    expect(sorted[0].id).toBe("b");
+    expect(sorted[1].id).toBe("a");
+    expect(sorted[2].id).toBe("c");
+  });
+
+  it("sorts by priority ascending (high first)", () => {
+    const locs = [
+      makeLocation({ id: "lo", priority: "low" }),
+      makeLocation({ id: "hi", priority: "high" }),
+      makeLocation({ id: "me", priority: "medium" })
+    ];
+    const sorted = sortLocations(locs, "priority", "asc");
+    expect(sorted[0].id).toBe("hi");
+    expect(sorted[1].id).toBe("me");
+    expect(sorted[2].id).toBe("lo");
+  });
+
+  it("sorts by nextActionDate ascending, undefined last", () => {
+    const locs = [
+      makeLocation({ id: "future", nextActionDate: "2099-01-01" }),
+      makeLocation({ id: "past", nextActionDate: "2020-01-01" }),
+      makeLocation({ id: "none", nextActionDate: undefined })
+    ];
+    const sorted = sortLocations(locs, "nextActionDate", "asc");
+    expect(sorted[0].id).toBe("past");
+    expect(sorted[1].id).toBe("future");
+    expect(sorted[2].id).toBe("none");
+  });
+
+  it("reverses order with desc direction", () => {
+    const locs = [
+      makeLocation({ id: "a", estimatedValue: 100000 }),
+      makeLocation({ id: "b", estimatedValue: 500000 })
+    ];
+    const asc = sortLocations(locs, "estimatedValue", "asc");
+    const desc = sortLocations(locs, "estimatedValue", "desc");
+    expect(asc[0].id).toBe("a");
+    expect(desc[0].id).toBe("b");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 12. groupByPipelineStatus pipeline helper
+// ---------------------------------------------------------------------------
+
+describe("groupByPipelineStatus", () => {
+  it("groups locations by their status", () => {
+    const locs = [
+      makeLocation({ id: "n1", status: "negotiating" }),
+      makeLocation({ id: "i1", status: "interested" }),
+      makeLocation({ id: "i2", status: "interested" })
+    ];
+    const groups = groupByPipelineStatus(locs);
+    expect(groups.negotiating).toHaveLength(1);
+    expect(groups.interested).toHaveLength(2);
+    expect(groups.watchlist).toHaveLength(0);
+    expect(groups.evaluating).toHaveLength(0);
+  });
+
+  it("ignores archived locations (not in pipeline columns)", () => {
+    const locs = [makeLocation({ id: "arch", status: "archived" })];
+    const groups = groupByPipelineStatus(locs);
+    // archived has no pipeline column — should not appear in any group
+    const allGrouped = Object.values(groups).flat();
+    expect(allGrouped).toHaveLength(0);
   });
 });

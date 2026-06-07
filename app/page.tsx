@@ -11,6 +11,8 @@ import {
 } from "lucide-react";
 import { AddLocationForm, type NewLocationInput } from "@/components/AddLocationForm";
 import { LocationDrawer } from "@/components/LocationDrawer";
+import { LocationPipeline } from "@/components/LocationPipeline";
+import { LocationTable } from "@/components/LocationTable";
 import { MapView } from "@/components/MapView";
 import { MetricsCards } from "@/components/MetricsCards";
 import { StatusFilter, type StatusFilterValue } from "@/components/StatusFilter";
@@ -44,6 +46,7 @@ export default function Home() {
   const [selectedId, setSelectedId] = useState<string | null>(
     null
   );
+  const [viewMode, setViewMode] = useState<"map" | "table" | "pipeline">("map");
   const [isAdding, setIsAdding] = useState(false);
   const [editingLocation, setEditingLocation] =
     useState<RealEstateLocation | null>(null);
@@ -362,7 +365,10 @@ export default function Home() {
 
       <div className="grid min-h-[calc(100dvh-81px)] grid-cols-1 lg:grid-cols-[340px_minmax(0,1fr)_360px]">
         <aside className="space-y-5 border-b border-white/10 bg-ink-900 p-4 lg:max-h-[calc(100dvh-81px)] lg:overflow-y-auto lg:border-b-0 lg:border-r">
-          <MetricsCards locations={activeLocations} />
+          <MetricsCards
+            locations={activeLocations}
+            onSelectLocation={(id) => setSelectedId(id)}
+          />
           <section className="space-y-3" aria-label="Search and local data actions">
             <label className="block space-y-1.5">
               <span className="text-xs font-medium text-slate-400">
@@ -721,11 +727,45 @@ export default function Home() {
           </details>
         </aside>
 
-        <MapView
-          locations={filteredLocations}
-          selectedId={selectedId}
-          onSelect={(location) => setSelectedId(location.id)}
-        />
+        <div className="flex flex-col border-b border-white/10 lg:border-b-0">
+          <div className="flex shrink-0 items-center gap-1 border-b border-white/10 bg-ink-900 p-2">
+            {(["map", "table", "pipeline"] as const).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setViewMode(mode)}
+                className={`inline-flex h-8 cursor-pointer items-center rounded px-3 text-xs font-semibold capitalize transition focus:outline-none focus:ring-2 focus:ring-teal-200 ${
+                  viewMode === mode
+                    ? "border border-teal-500/30 bg-teal-500/15 text-teal-100"
+                    : "border border-transparent text-slate-400 hover:bg-white/[0.06] hover:text-white"
+                }`}
+              >
+                {mode}
+              </button>
+            ))}
+          </div>
+          {viewMode === "map" && (
+            <MapView
+              locations={filteredLocations}
+              selectedId={selectedId}
+              onSelect={(location) => setSelectedId(location.id)}
+            />
+          )}
+          {viewMode === "table" && (
+            <LocationTable
+              locations={filteredLocations}
+              selectedId={selectedId}
+              onSelect={(location) => setSelectedId(location.id)}
+            />
+          )}
+          {viewMode === "pipeline" && (
+            <LocationPipeline
+              locations={filteredLocations}
+              selectedId={selectedId}
+              onSelect={(location) => setSelectedId(location.id)}
+            />
+          )}
+        </div>
 
         <LocationDrawer
           location={selectedLocation}
