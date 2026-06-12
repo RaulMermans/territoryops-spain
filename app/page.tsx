@@ -33,6 +33,9 @@ import { formatAssetType, statusMeta } from "@/lib/status";
 import type { RealEstateLocation } from "@/types/location";
 
 const STORAGE_KEY = "territoryops-spain.locations.v1";
+const VIEW_MODE_STORAGE_KEY = "territoryops-spain.viewMode.v1";
+const viewModes = ["map", "table", "pipeline"] as const;
+type ViewMode = (typeof viewModes)[number];
 
 export default function Home() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -46,7 +49,7 @@ export default function Home() {
   const [selectedId, setSelectedId] = useState<string | null>(
     null
   );
-  const [viewMode, setViewMode] = useState<"map" | "table" | "pipeline">("map");
+  const [viewMode, setViewMode] = useState<ViewMode>("map");
   const [isAdding, setIsAdding] = useState(false);
   const [editingLocation, setEditingLocation] =
     useState<RealEstateLocation | null>(null);
@@ -88,6 +91,22 @@ export default function Home() {
 
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(locations));
   }, [hasLoadedStorage, locations]);
+
+  useEffect(() => {
+    const viewModeTimer = window.setTimeout(() => {
+      const storedViewMode = window.localStorage.getItem(VIEW_MODE_STORAGE_KEY);
+
+      if ((viewModes as readonly string[]).includes(storedViewMode ?? "")) {
+        setViewMode(storedViewMode as ViewMode);
+      }
+    }, 0);
+
+    return () => window.clearTimeout(viewModeTimer);
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(VIEW_MODE_STORAGE_KEY, viewMode);
+  }, [viewMode]);
 
   const filteredLocations = useMemo(
     () => {
@@ -363,8 +382,8 @@ export default function Home() {
         }}
       />
 
-      <div className="grid min-h-[calc(100dvh-81px)] grid-cols-1 lg:grid-cols-[340px_minmax(0,1fr)_360px]">
-        <aside className="space-y-5 border-b border-white/10 bg-ink-900 p-4 lg:max-h-[calc(100dvh-81px)] lg:overflow-y-auto lg:border-b-0 lg:border-r">
+      <div className="grid min-h-[calc(100dvh-81px)] grid-cols-1 lg:grid-cols-[340px_minmax(0,1fr)_360px] lg:h-[calc(100dvh-81px)] lg:max-h-[calc(100dvh-81px)] lg:overflow-hidden">
+        <aside className="space-y-5 border-b border-white/5 bg-[#0b1118] p-4 lg:max-h-full lg:overflow-y-auto lg:border-b-0 lg:border-r lg:border-white/5">
           <MetricsCards
             locations={activeLocations}
             onSelectLocation={(id) => setSelectedId(id)}
@@ -484,7 +503,7 @@ export default function Home() {
               <div>
                 <h2 className="text-sm font-semibold text-white">Locations</h2>
                 <p className="text-xs text-slate-500">
-                  {filteredLocations.length} visible on map
+                  {filteredLocations.length} visible records
                 </p>
               </div>
             </div>
@@ -727,17 +746,17 @@ export default function Home() {
           </details>
         </aside>
 
-        <div className="flex flex-col border-b border-white/10 lg:border-b-0">
-          <div className="flex shrink-0 items-center gap-1 border-b border-white/10 bg-ink-900 p-2">
-            {(["map", "table", "pipeline"] as const).map((mode) => (
+        <div className="flex flex-col border-b border-white/5 lg:border-b-0 lg:h-full lg:overflow-hidden bg-[#070b10]">
+          <div className="flex shrink-0 items-center gap-2 border-b border-white/5 bg-[#0b1118] px-4 py-3">
+            {viewModes.map((mode) => (
               <button
                 key={mode}
                 type="button"
                 onClick={() => setViewMode(mode)}
-                className={`inline-flex h-8 cursor-pointer items-center rounded px-3 text-xs font-semibold capitalize transition focus:outline-none focus:ring-2 focus:ring-teal-200 ${
+                className={`inline-flex h-8 cursor-pointer items-center rounded border px-4 font-mono text-[10px] font-bold uppercase tracking-wider transition-all focus:outline-none focus:ring-1 focus:ring-teal-500/50 ${
                   viewMode === mode
-                    ? "border border-teal-500/30 bg-teal-500/15 text-teal-100"
-                    : "border border-transparent text-slate-400 hover:bg-white/[0.06] hover:text-white"
+                    ? "border-teal-500/30 bg-teal-500/10 text-teal-300 shadow-sm shadow-teal-500/5"
+                    : "border-transparent text-slate-500 hover:text-slate-200 hover:bg-white/[0.02]"
                 }`}
               >
                 {mode}

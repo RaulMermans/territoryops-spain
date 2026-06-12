@@ -1,10 +1,28 @@
 # TerritoryOps Spain
 
-TerritoryOps Spain is a local-first business control console for real estate locations across Spain — places you own, are negotiating, or are tracking. It starts empty by default, lets you add real assets from coordinates or Google Maps links, and keeps the dataset in your browser unless you export it.
+TerritoryOps Spain is a local-first internal control console for real estate opportunity tracking across Spain.
 
-## Problem It Solves
+Built as a lightweight internal operating console for real estate opportunity control — a private operational atlas for owned, negotiating, evaluating, interested, and watchlist locations. Add assets from coordinates or Google Maps links, classify their status, track deal and contact details, and review the portfolio across Map, Table, and Pipeline views.
 
-Real estate operations often begin with scattered map links, notes, and spreadsheets. TerritoryOps Spain provides one private local workspace for adding locations, classifying their status, tracking deal details and contacts, viewing them on a map, and exporting records without setting up backend infrastructure.
+## Key Views
+
+- **Map** — Spain-centered Leaflet map with status-colored markers.
+- **Table** — operational spreadsheet view with sortable columns.
+- **Pipeline** — kanban-style board grouped by status.
+
+All three views share the same search, status, and province filters, and switching views never resets your selection.
+
+## Local-First & Private
+
+All data lives in the browser's `localStorage` under `territoryops-spain.locations.v1`. Nothing is sent to a server — there is no backend, database, or authentication. JSON and CSV export/import cover backups and portability. `Clear all local data` resets the workspace.
+
+## Quality
+
+- 64 tests (`npm test`)
+- Lint (`npm run lint`)
+- Typecheck (`npm run typecheck`)
+- Build (`npm run build`)
+- GitHub Actions CI runs all of the above on every push and pull request — see [CI](#ci).
 
 ## Product Behavior
 
@@ -12,19 +30,15 @@ Real estate operations often begin with scattered map links, notes, and spreadsh
 - Existing browser localStorage data is restored automatically.
 - Legacy statuses from earlier builds are migrated automatically.
 - Demo data is optional and must be loaded manually.
-- User data is stored only in browser localStorage.
-- `Clear all local data` removes the local dataset from the app.
-- JSON and CSV export/import are available for portability.
+- Selected view (Map/Table/Pipeline) persists across reloads.
 
-## Local-First Architecture
+## Architecture
 
 - Next.js App Router frontend.
 - TypeScript `RealEstateLocation` data model.
 - Tailwind CSS command-center interface.
 - Leaflet map with OpenStreetMap tiles.
-- Browser localStorage persistence under `territoryops-spain.locations.v1`.
 - Optional Spanish sample data in `data/mockLocations.ts`.
-- No backend, Supabase, authentication, AI, Google Maps API, paid APIs, or province GeoJSON.
 
 ## Tech Stack
 
@@ -195,10 +209,25 @@ http://localhost:3000
 ## Build, Lint, And Test
 
 ```bash
-npm run build
 npm run lint
+npm run typecheck
 npm test
+npm run build
 ```
+
+## CI
+
+GitHub Actions (`.github/workflows/ci.yml`) runs on every push to `main` and on every pull request:
+
+```bash
+npm ci
+npm run lint
+npm run typecheck
+npm test
+npm run build
+```
+
+A pull request that fails lint, typecheck, tests, or the build will show a failing check.
 
 ## Manual QA Checklist
 
@@ -235,6 +264,7 @@ npm test
 - Imported records with negative `askingPrice`, `monthlyRent`, or other business numbers are rejected.
 - Imported records with `probability` below 0 or above 100 are rejected; 0 and 100 are accepted.
 - View switcher toggles between Map, Table, and Pipeline without resetting search, filters, or selection.
+- Selected view mode persists in localStorage (`territoryops-spain.viewMode.v1`) and is restored after a reload.
 - Map View renders and behaves exactly as before.
 - Table View: columns render correctly, sorting works on Status/Priority/Due/Est. value/Updated, overdue dates and missing-contact negotiating rows are visually marked, clicking a row opens the drawer.
 - Table/Pipeline summary bars show correct visible/attention/negotiating/controlled counts.
@@ -267,6 +297,31 @@ public/screenshots/data-health.txt
 public/screenshots/province-summary.txt
 ```
 
+These are text placeholders. Before publishing this repo as a portfolio piece, replace them with real PNG/JPG screenshots of the Map, Table, Pipeline, and drawer views (keep files small, under `public/screenshots/`).
+
+## Public Readiness Checklist
+
+- [x] No secrets or API keys required or committed.
+- [x] Sample data (`data/mockLocations.ts`) contains only fictional locations and fake contact details.
+- [x] Local-first storage model documented (`territoryops-spain.locations.v1`, `territoryops-spain.viewMode.v1`).
+- [x] CI enabled (`.github/workflows/ci.yml`) — lint, typecheck, test, build on push/PR.
+- [x] Tests pass (`npm test`).
+- [x] Typecheck passes (`npm run typecheck`).
+- [x] Lint passes (`npm run lint`).
+- [x] Build passes (`npm run build`).
+- [x] No backend, database, or authentication claims.
+- [x] Known limitations documented below.
+- [ ] Screenshot placeholders replaced with real images (see [Screenshots](#screenshots)).
+
+## Portfolio Notes
+
+TerritoryOps Spain is positioned as a private operational atlas for real estate decisions — a focused internal tool rather than a multi-tenant SaaS product. Notable product/design decisions:
+
+- **Local-first first**: localStorage keeps the tool usable with zero setup and zero data-sharing risk; a backend is deliberately postponed until the workflow is proven.
+- **Manual status changes**: status moves happen through the edit form, keeping the data model explicit and auditable.
+- **No drag-and-drop yet**: the Pipeline board is a read-only view of the same filtered dataset as Map and Table, avoiding state-sync complexity until there's a real need for it.
+- **Backend postponed**: Supabase/auth/sync are intentionally out of scope until the local-first workflow earns its keep.
+
 ## Known Limitations And Dependency Notes
 
 - Data is browser-local and not shared across devices.
@@ -279,7 +334,7 @@ public/screenshots/province-summary.txt
 - **No Supabase yet** — no remote database or sync layer.
 - **No auth yet** — single-user, browser-local workspace.
 - **No drag-and-drop yet** — Pipeline columns are read-only views; status changes go through the existing edit flow in the drawer/form.
-- `npm audit` reports two moderate findings from Next.js depending on a nested `postcss <8.5.10`. The only suggested automated fix is `npm audit fix --force`, which would downgrade Next to `9.3.3`; that is a breaking change and was intentionally not applied.
+- `npm audit` reports findings in dev dependencies: a critical advisory in `vitest <3.2.6` (arbitrary file read/execution when the Vitest UI server is running — this project never runs `vitest --ui`, only `vitest run`), plus moderate advisories in `esbuild`/`vite`/`vite-node` (via Vitest) and `postcss <8.5.10` (via Next.js). The only automated fix is `npm audit fix --force`, which would bump Vitest to `4.x` and downgrade Next to `9.3.3`; both are breaking changes and were intentionally not applied. None of these affect the production build, which has no exposed dev/UI server.
 
 ## Roadmap
 
@@ -295,6 +350,9 @@ public/screenshots/province-summary.txt
 
 ```txt
 territoryops-spain/
++-- .github/
+|   +-- workflows/
+|       +-- ci.yml
 +-- app/
 |   +-- globals.css
 |   +-- layout.tsx
@@ -330,4 +388,5 @@ territoryops-spain/
 +-- postcss.config.js
 +-- tailwind.config.ts
 +-- README.md
++-- SECURITY.md
 ```

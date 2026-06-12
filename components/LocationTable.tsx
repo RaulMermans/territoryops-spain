@@ -14,8 +14,8 @@ interface LocationTableProps {
 }
 
 function priorityClass(priority: RealEstateLocation["priority"]) {
-  if (priority === "high") return "text-red-300";
-  if (priority === "medium") return "text-amber-300";
+  if (priority === "high") return "text-red-400 font-bold";
+  if (priority === "medium") return "text-amber-400 font-semibold";
   return "text-slate-500";
 }
 
@@ -30,9 +30,9 @@ function SortIcon({
     return <span className="ml-1 text-slate-700">↕</span>;
   }
   return dir === "asc" ? (
-    <ChevronUp size={11} className="ml-0.5 inline text-teal-400" />
+    <ChevronUp size={10} className="ml-1 inline text-teal-400" />
   ) : (
-    <ChevronDown size={11} className="ml-0.5 inline text-teal-400" />
+    <ChevronDown size={10} className="ml-1 inline text-teal-400" />
   );
 }
 
@@ -52,7 +52,7 @@ function SortTh({
   return (
     <th
       onClick={() => onSort(colKey)}
-      className="cursor-pointer select-none whitespace-nowrap px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500 transition hover:text-slate-300"
+      className="cursor-pointer select-none whitespace-nowrap px-4 py-3 text-left font-mono text-[9px] font-bold uppercase tracking-wider text-slate-500 transition hover:text-slate-300 border-b border-white/5"
     >
       {label}
       <SortIcon active={sortKey === colKey} dir={sortDir} />
@@ -93,73 +93,75 @@ export function LocationTable({ locations, selectedId, onSelect }: LocationTable
 
   if (locations.length === 0) {
     return (
-      <div className="flex flex-1 items-center justify-center p-10 text-center">
-        <div>
-          <p className="text-sm font-medium text-slate-300">No records match the current filters.</p>
-          <p className="mt-1 text-xs text-slate-500">Clear search, status, or province filters to see locations.</p>
+      <div className="flex flex-1 items-center justify-center p-12 text-center bg-[#070b10]">
+        <div className="font-mono max-w-sm rounded border border-white/5 bg-[#0b1118]/30 p-8">
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-400">No records found</p>
+          <p className="mt-2 text-[10px] text-slate-600 font-sans leading-relaxed">
+            No locations match the current filters. Adjust your search or filters to display records.
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col overflow-hidden">
+    <div className="flex flex-col flex-1 min-h-0 overflow-hidden bg-[#070b10]">
       {/* Summary bar */}
-      <div className="flex shrink-0 flex-wrap gap-x-4 gap-y-1 border-b border-white/10 bg-ink-900/40 px-4 py-2 text-xs text-slate-400">
+      <div className="flex shrink-0 flex-wrap gap-x-6 gap-y-1.5 border-b border-white/5 bg-[#0b1118]/50 px-6 py-2.5 font-mono text-[9px] uppercase tracking-widest text-slate-500">
         <span>
-          <span className="font-mono font-semibold text-white">{locations.length}</span> visible
+          <span className="font-bold text-slate-300">{locations.length}</span> visible
         </span>
         {needsAttentionCt > 0 && (
-          <span className="text-amber-300">
-            <span className="font-mono font-semibold">{needsAttentionCt}</span> needs attention
+          <span className="text-amber-400 font-medium">
+            ⚠ <span className="font-bold">{needsAttentionCt}</span> needs attention
           </span>
         )}
         {negotiatingCt > 0 && (
           <span>
-            <span className="font-mono font-semibold text-white">{negotiatingCt}</span> negotiating
+            <span className="font-bold text-slate-300">{negotiatingCt}</span> negotiating
           </span>
         )}
         {controlledCt > 0 && (
-          <span>
-            <span className="font-mono font-semibold text-white">{controlledCt}</span> controlled
+          <span className="text-teal-400 font-medium">
+            <span className="font-bold">{controlledCt}</span> controlled
           </span>
         )}
       </div>
 
-      {/* Table */}
+      {/* Table container */}
       <div className="flex-1 overflow-auto">
-        <table className="w-full min-w-[960px] border-collapse text-sm">
-          <thead className="sticky top-0 z-10 bg-ink-900">
-            <tr className="border-b border-white/10">
-              <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+        <table className="w-full min-w-[1000px] border-collapse text-left text-xs font-sans">
+          <thead className="sticky top-0 z-10 bg-[#0b1118] border-b border-white/5 shadow-sm">
+            <tr>
+              <th className="px-4 py-3 font-mono text-[9px] font-bold uppercase tracking-wider text-slate-500 border-b border-white/5">
                 Name
               </th>
-              <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              <th className="px-4 py-3 font-mono text-[9px] font-bold uppercase tracking-wider text-slate-500 border-b border-white/5">
                 City
               </th>
-              <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              <th className="px-4 py-3 font-mono text-[9px] font-bold uppercase tracking-wider text-slate-500 border-b border-white/5">
                 Province
               </th>
               <SortTh label="Status" colKey="status" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
               <SortTh label="Priority" colKey="priority" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
-              <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              <th className="px-4 py-3 font-mono text-[9px] font-bold uppercase tracking-wider text-slate-500 border-b border-white/5">
                 Interest
               </th>
-              <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              <th className="px-4 py-3 font-mono text-[9px] font-bold uppercase tracking-wider text-slate-500 border-b border-white/5">
                 Control
               </th>
-              <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              <th className="px-4 py-3 font-mono text-[9px] font-bold uppercase tracking-wider text-slate-500 border-b border-white/5">
                 Next action
               </th>
               <SortTh label="Due" colKey="nextActionDate" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
               <SortTh label="Est. value" colKey="estimatedValue" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
-              <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              <th className="px-4 py-3 font-mono text-[9px] font-bold uppercase tracking-wider text-slate-500 border-b border-white/5">
                 Asking
               </th>
-              <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              <th className="px-4 py-3 font-mono text-[9px] font-bold uppercase tracking-wider text-slate-500 border-b border-white/5">
                 Target
               </th>
-              <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              <th className="px-4 py-3 font-mono text-[9px] font-bold uppercase tracking-wider text-slate-500 border-b border-white/5">
                 Contact
               </th>
               <SortTh label="Updated" colKey="updatedAt" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
@@ -176,68 +178,64 @@ export function LocationTable({ locations, selectedId, onSelect }: LocationTable
                 <tr
                   key={loc.id}
                   onClick={() => onSelect(loc)}
-                  className={`cursor-pointer border-b border-white/[0.04] transition hover:bg-white/[0.04] ${
-                    isSelected ? "bg-teal-300/[0.06]" : ""
+                  className={`cursor-pointer border-b border-white/[0.02] transition-colors hover:bg-white/[0.02] ${
+                    isSelected ? "bg-teal-500/[0.04] text-teal-300" : ""
                   }`}
                 >
-                  <td className="px-3 py-2 font-medium text-white">
+                  <td className="px-4 py-3 font-semibold text-slate-200">
                     <span className="flex items-center gap-1.5">
                       <span>{loc.name}</span>
                       {loc.priority === "high" && (
-                        <span className="rounded-sm bg-red-400/15 px-1 text-[10px] font-bold text-red-300">
+                        <span className="rounded bg-red-950/20 border border-red-500/20 px-1 text-[8px] font-bold tracking-wider text-red-400 font-mono">
                           HIGH
                         </span>
                       )}
                     </span>
                   </td>
-                  <td className="px-3 py-2 text-xs text-slate-400">{loc.city}</td>
-                  <td className="px-3 py-2 text-xs text-slate-400">{loc.province}</td>
-                  <td className="px-3 py-2">
+                  <td className="px-4 py-3 text-slate-400">{loc.city}</td>
+                  <td className="px-4 py-3 text-slate-400">{loc.province}</td>
+                  <td className="px-4 py-3">
                     <span
-                      className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${statusMeta[loc.status].chipClass}`}
+                      className={`rounded px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider font-mono ${statusMeta[loc.status].chipClass.replace("border-", "border-0 bg-transparent text-")}`}
                     >
                       {statusMeta[loc.status].label}
                     </span>
                   </td>
-                  <td className={`px-3 py-2 text-xs font-semibold ${priorityClass(loc.priority)}`}>
-                    {loc.priority.toUpperCase()}
+                  <td className={`px-4 py-3 font-mono text-[9px] uppercase tracking-wider ${priorityClass(loc.priority)}`}>
+                    {loc.priority}
                   </td>
-                  <td className="px-3 py-2 text-xs capitalize text-slate-400">
-                    {loc.interestLevel ?? "—"}
-                  </td>
-                  <td className="px-3 py-2 text-xs capitalize text-slate-400">
-                    {loc.controlType ?? "—"}
-                  </td>
-                  <td className="max-w-[180px] px-3 py-2 text-xs text-slate-300">
-                    <span className="block truncate">{loc.nextAction ?? "—"}</span>
+                  <td className="px-4 py-3 text-slate-400 capitalize">{loc.interestLevel ?? "—"}</td>
+                  <td className="px-4 py-3 text-slate-400 capitalize">{loc.controlType ?? "—"}</td>
+                  <td className="max-w-[200px] px-4 py-3 text-slate-300 truncate" title={loc.nextAction}>
+                    {loc.nextAction ?? "—"}
                   </td>
                   <td
-                    className={`whitespace-nowrap px-3 py-2 font-mono text-xs ${
-                      overdue ? "text-red-300" : "text-slate-400"
+                    className={`whitespace-nowrap px-4 py-3 font-mono text-[10px] ${
+                      overdue ? "text-red-400 font-semibold" : "text-slate-400"
                     }`}
                   >
                     {loc.nextActionDate ?? "—"}
-                    {overdue && <span className="ml-1 text-red-400">⚠</span>}
+                    {overdue && <span className="ml-1 text-red-400" title="Action Overdue">⚠</span>}
                   </td>
-                  <td className="whitespace-nowrap px-3 py-2 font-mono text-xs text-slate-300">
+                  <td className="whitespace-nowrap px-4 py-3 font-mono text-[10px] font-semibold text-slate-200">
                     {loc.estimatedValue !== undefined
                       ? formatCurrency(loc.estimatedValue)
                       : "—"}
                   </td>
-                  <td className="whitespace-nowrap px-3 py-2 font-mono text-xs text-slate-400">
+                  <td className="whitespace-nowrap px-4 py-3 font-mono text-[10px] text-slate-400">
                     {loc.askingPrice !== undefined ? formatCurrency(loc.askingPrice) : "—"}
                   </td>
-                  <td className="whitespace-nowrap px-3 py-2 font-mono text-xs text-slate-400">
+                  <td className="whitespace-nowrap px-4 py-3 font-mono text-[10px] text-slate-400">
                     {loc.targetPrice !== undefined ? formatCurrency(loc.targetPrice) : "—"}
                   </td>
-                  <td className="px-3 py-2 text-xs text-slate-400">
+                  <td className="px-4 py-3 text-slate-400">
                     {noContact ? (
-                      <span className="text-amber-300">⚠ No contact</span>
+                      <span className="text-amber-400 font-medium font-mono text-[10px]">⚠ NO CONTACT</span>
                     ) : (
                       (loc.contactName ?? "—")
                     )}
                   </td>
-                  <td className="whitespace-nowrap px-3 py-2 font-mono text-xs text-slate-500">
+                  <td className="whitespace-nowrap px-4 py-3 font-mono text-[10px] text-slate-500">
                     {loc.updatedAt.slice(0, 10)}
                   </td>
                 </tr>
@@ -249,3 +247,4 @@ export function LocationTable({ locations, selectedId, onSelect }: LocationTable
     </div>
   );
 }
+

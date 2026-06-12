@@ -13,8 +13,8 @@ interface LocationPipelineProps {
 }
 
 function priorityClass(priority: RealEstateLocation["priority"]) {
-  if (priority === "high") return "text-red-300";
-  if (priority === "medium") return "text-amber-300";
+  if (priority === "high") return "text-red-400";
+  if (priority === "medium") return "text-amber-400";
   return "text-slate-500";
 }
 
@@ -37,30 +37,30 @@ function PipelineCard({
     <button
       type="button"
       onClick={() => onSelect(location)}
-      className={`w-full rounded-md border p-2.5 text-left transition focus:outline-none focus:ring-2 focus:ring-teal-200 ${
+      className={`w-full cursor-pointer rounded border p-2.5 text-left transition focus:outline-none focus:ring-1 focus:ring-teal-500/50 ${
         isSelected
-          ? "border-teal-300/40 bg-teal-300/10"
-          : "border-white/10 bg-white/[0.03] hover:bg-white/[0.07]"
+          ? "border-teal-500/30 bg-teal-500/10"
+          : "border-white/5 bg-[#0b1118] hover:border-white/10 hover:bg-white/[0.02]"
       }`}
     >
       <div className="flex items-start justify-between gap-2">
-        <span className="min-w-0 flex-1 text-xs font-semibold leading-snug text-white">
+        <span className="min-w-0 flex-1 text-xs font-semibold leading-snug text-slate-100">
           {location.name}
         </span>
-        <span className={`shrink-0 text-[10px] font-bold ${priorityClass(location.priority)}`}>
-          {location.priority.toUpperCase()}
+        <span className={`shrink-0 font-mono text-[9px] font-bold uppercase tracking-wider ${priorityClass(location.priority)}`}>
+          {location.priority}
         </span>
       </div>
-      <p className="mt-0.5 text-[11px] text-slate-500">
+      <p className="mt-0.5 font-mono text-[10px] uppercase tracking-wide text-slate-500">
         {location.city}, {location.province}
       </p>
       {location.interestLevel && (
-        <p className="mt-1 text-[11px] capitalize text-slate-500">
+        <p className="mt-1.5 text-[11px] capitalize text-slate-400">
           Interest: {location.interestLevel}
         </p>
       )}
       {location.estimatedValue !== undefined && (
-        <p className="mt-1 font-mono text-[11px] text-slate-300">
+        <p className="mt-1 font-mono text-[11px] font-semibold text-slate-200">
           {formatCurrency(location.estimatedValue)}
         </p>
       )}
@@ -70,14 +70,14 @@ function PipelineCard({
         </p>
       )}
       {(overdue || noContact) && (
-        <div className="mt-1.5 flex flex-wrap gap-1">
+        <div className="mt-2 flex flex-wrap gap-1 font-mono text-[9px] font-bold uppercase tracking-wider">
           {overdue && (
-            <span className="rounded-sm bg-red-400/15 px-1 py-0.5 text-[10px] font-semibold text-red-300">
+            <span className="rounded border border-red-500/20 bg-red-950/20 px-1.5 py-0.5 text-red-400">
               ⚠ Overdue
             </span>
           )}
           {noContact && (
-            <span className="rounded-sm bg-amber-400/15 px-1 py-0.5 text-[10px] font-semibold text-amber-300">
+            <span className="rounded border border-amber-500/20 bg-amber-950/20 px-1.5 py-0.5 text-amber-400">
               ⚠ No contact
             </span>
           )}
@@ -103,18 +103,21 @@ function PipelineColumn({
   const meta = statusMeta[status];
 
   return (
-    <div className="flex w-56 shrink-0 flex-col gap-2">
-      <div className="flex items-center justify-between gap-2">
-        <span
-          className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${meta.chipClass}`}
-        >
+    <div className="flex w-60 shrink-0 flex-col gap-2">
+      <div className="flex items-center justify-between gap-2 border-b border-white/5 px-1 pb-2">
+        <span className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-wider text-slate-300">
+          <span
+            className="h-2 w-2 rounded-full"
+            style={{ backgroundColor: meta.color }}
+            aria-hidden="true"
+          />
           {meta.label}
         </span>
-        <span className="font-mono text-xs text-slate-500">{locations.length}</span>
+        <span className="font-mono text-[10px] text-slate-500">{locations.length}</span>
       </div>
       <div className="space-y-2">
         {locations.length === 0 ? (
-          <p className="rounded-md border border-white/5 bg-white/[0.015] px-3 py-4 text-center text-xs text-slate-600">
+          <p className="rounded border border-white/5 bg-[#0b1118]/40 px-3 py-4 text-center font-mono text-[9px] uppercase tracking-wider text-slate-600">
             No records
           </p>
         ) : (
@@ -163,45 +166,47 @@ export function LocationPipeline({
 
   if (locations.length === 0) {
     return (
-      <div className="flex flex-1 items-center justify-center p-10 text-center">
-        <div>
-          <p className="text-sm font-medium text-slate-300">No records match the current filters.</p>
-          <p className="mt-1 text-xs text-slate-500">Clear search, status, or province filters to see locations.</p>
+      <div className="flex flex-1 items-center justify-center p-12 text-center bg-[#070b10]">
+        <div className="font-mono max-w-sm rounded border border-white/5 bg-[#0b1118]/30 p-8">
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-400">No records found</p>
+          <p className="mt-2 text-[10px] text-slate-600 font-sans leading-relaxed">
+            No locations match the current filters. Adjust your search or filters to display records.
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col overflow-hidden">
+    <div className="flex flex-col flex-1 min-h-0 overflow-hidden bg-[#070b10]">
       {/* Summary bar */}
-      <div className="flex shrink-0 flex-wrap gap-x-4 gap-y-1 border-b border-white/10 bg-ink-900/40 px-4 py-2 text-xs text-slate-400">
+      <div className="flex shrink-0 flex-wrap gap-x-6 gap-y-1.5 border-b border-white/5 bg-[#0b1118]/50 px-6 py-2.5 font-mono text-[9px] uppercase tracking-widest text-slate-500">
         <span>
-          <span className="font-mono font-semibold text-white">{pipelineLocations.length}</span> visible
+          <span className="font-bold text-slate-300">{pipelineLocations.length}</span> visible
         </span>
         <span>
-          <span className="font-mono font-semibold text-white">{activeOpportunities}</span> active
+          <span className="font-bold text-slate-300">{activeOpportunities}</span> active
         </span>
         {negotiatingCt > 0 && (
           <span>
-            <span className="font-mono font-semibold text-white">{negotiatingCt}</span> negotiating
+            <span className="font-bold text-slate-300">{negotiatingCt}</span> negotiating
           </span>
         )}
         {controlledCt > 0 && (
-          <span>
-            <span className="font-mono font-semibold text-white">{controlledCt}</span> controlled
+          <span className="text-teal-400 font-medium">
+            <span className="font-bold">{controlledCt}</span> controlled
           </span>
         )}
         {needsAttentionCt > 0 && (
-          <span className="text-amber-300">
-            <span className="font-mono font-semibold">{needsAttentionCt}</span> needs attention
+          <span className="text-amber-400 font-medium">
+            ⚠ <span className="font-bold">{needsAttentionCt}</span> needs attention
           </span>
         )}
       </div>
 
       {/* Kanban columns */}
-      <div className="flex-1 overflow-x-auto">
-        <div className="flex h-full gap-3 p-4">
+      <div className="flex-1 overflow-x-auto overflow-y-auto">
+        <div className="flex h-full gap-4 p-4">
           {pipelineStatuses.map((status) => (
             <PipelineColumn
               key={status}

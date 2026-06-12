@@ -36,7 +36,8 @@ export function MetricsCards({ locations, onSelectLocation }: MetricsCardsProps)
   ];
 
   return (
-    <section aria-label="Portfolio metrics" className="space-y-3">
+    <section aria-label="Portfolio metrics" className="space-y-3 font-mono">
+      {/* Metric Cards Grid */}
       <div className="grid grid-cols-2 gap-2">
         {metrics.map((metric) => {
           const Icon = metric.icon;
@@ -44,65 +45,69 @@ export function MetricsCards({ locations, onSelectLocation }: MetricsCardsProps)
           return (
             <div
               key={metric.label}
-              className="rounded-md border border-white/10 bg-white/[0.04] p-3"
+              className="rounded border border-white/5 bg-[#0b1118] p-3 transition hover:border-white/10"
             >
-              <div className="mb-3 flex items-center justify-between text-slate-400">
-                <span className="text-xs uppercase text-slate-500">
+              <div className="mb-2 flex items-center justify-between text-slate-500">
+                <span className="text-[9px] uppercase tracking-wider font-bold">
                   {metric.label}
                 </span>
-                <Icon size={15} aria-hidden="true" />
+                <Icon size={12} className="text-slate-600" aria-hidden="true" />
               </div>
-              <p className="font-mono text-2xl font-semibold text-white">
+              <p className="text-xl font-bold text-slate-100">
                 {metric.value}
               </p>
             </div>
           );
         })}
       </div>
-      <div className="rounded-md border border-teal-300/20 bg-teal-300/[0.07] p-3">
-        <p className="text-xs uppercase text-teal-100/70">Pipeline value</p>
-        <p className="mt-2 font-mono text-xl font-semibold text-teal-100">
+
+      {/* Pipeline Value Instrumentation Panel */}
+      <div className="rounded border border-teal-500/20 bg-teal-950/20 p-3.5 shadow-sm">
+        <p className="text-[9px] font-bold uppercase tracking-widest text-teal-400">Pipeline total value</p>
+        <p className="mt-1.5 text-lg font-bold text-teal-200">
           {formatCurrency(pipelineValue(locations))}
         </p>
       </div>
+
+      {/* Needs Attention Alert Dossier */}
       {attentionItems.length > 0 ? (
-        <div className="rounded-md border border-amber-300/25 bg-amber-300/[0.07] p-3">
+        <div className="rounded border border-amber-500/20 bg-amber-950/10 p-3.5 shadow-sm">
           <div className="flex items-center gap-2">
-            <AlertTriangle size={14} className="text-amber-300" aria-hidden="true" />
-            <p className="text-xs uppercase text-amber-300/80">Needs attention</p>
-            <span className="ml-auto font-mono text-lg font-semibold text-amber-100">
+            <AlertTriangle size={13} className="text-amber-400" aria-hidden="true" />
+            <p className="text-[9px] font-bold uppercase tracking-widest text-amber-400">Needs attention</p>
+            <span className="ml-auto text-xs font-bold text-amber-300">
               {attentionItems.length}
             </span>
           </div>
-          <p className="mb-2 mt-1 text-xs text-amber-100/60">
-            overdue actions, missing next steps, or negotiating without contact
+          <p className="mt-1 text-[9px] text-slate-500 font-sans leading-normal">
+            Actions overdue, missing next steps, or missing contacts during negotiation.
           </p>
-          <div className="space-y-1">
+          <div className="mt-3.5 space-y-1.5">
             {attentionItems.slice(0, 3).map(({ location, reasons }) => (
               <button
                 key={location.id}
                 type="button"
                 onClick={() => onSelectLocation?.(location.id)}
-                className="flex w-full cursor-pointer items-start justify-between gap-2 rounded-md px-2 py-1.5 text-left transition hover:bg-amber-300/10 focus:outline-none focus:ring-2 focus:ring-amber-200"
+                className="flex w-full cursor-pointer items-start justify-between gap-3 rounded border border-white/5 bg-[#0b1118] p-2 text-left transition hover:border-amber-500/30 hover:bg-amber-950/20 focus:outline-none focus:ring-1 focus:ring-amber-500/40"
               >
                 <span className="min-w-0">
-                  <span className="block truncate text-xs font-semibold text-white">
+                  <span className="block truncate font-sans text-xs font-semibold text-slate-200">
                     {location.name}
                   </span>
-                  <span className="text-[11px] text-amber-100/60">
+                  <span className="block text-[8px] tracking-wide text-slate-500 uppercase mt-0.5">
                     {reasons.map((r) => attentionReasonLabel[r]).join(" · ")}
                   </span>
                 </span>
                 <span
-                  className={`mt-0.5 shrink-0 rounded-full border px-1.5 py-0.5 text-[10px] font-medium ${statusMeta[location.status].chipClass}`}
+                  className={`mt-0.5 shrink-0 rounded px-1 text-[8px] font-bold tracking-wider uppercase ${statusMeta[location.status].chipClass.replace("border-", "border-0 bg-transparent text-")}`}
                 >
                   {statusMeta[location.status].label}
                 </span>
               </button>
             ))}
             {attentionItems.length > 3 && (
-              <p className="px-2 text-[11px] text-amber-100/50">
-                +{attentionItems.length - 3} more
+              <p className="px-2 text-[9px] uppercase tracking-wider text-slate-600 text-right">
+                +{attentionItems.length - 3} additional
               </p>
             )}
           </div>
@@ -111,3 +116,4 @@ export function MetricsCards({ locations, onSelectLocation }: MetricsCardsProps)
     </section>
   );
 }
+
